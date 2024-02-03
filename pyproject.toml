@@ -1,2 +1,10 @@
 [build-system]
-requires = ["setuptools", "wheel", "setuptools-rust"]
+requires = ["setuptools", "setuptools-rust"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Elo-MMR-Py"
+version = "1.0"
+
+[[tool.setuptools-rust.ext-modules]]
+target = "elo_mmr_py.elo_mmr_python_bindings"

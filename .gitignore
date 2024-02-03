@@ -1,0 +1,12 @@
+*.pyc
+__pycache__/
+*.egg-info/
+target/
+build/
+dist/
+
+*.so
+*.dll
+*.dylib
+
+Cargo.lock
