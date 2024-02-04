@@ -4,8 +4,28 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Elo-MMR-Py"
-version = "1.0.1"
+version = "1.0.2"
 readme = "README.md"
+description = "Python bindings for Elo-MRR"
+authors = [{name = "Aleksey Ropan"}]
+license = {file = "LICENSE"}
+keywords = ['rating', 'competition', 'skill', 'mmr', 'elo', 'trueskill', 'endure', 'glicko', 'python', 'rust']
+classifiers = [
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Rust",
+  "Topic :: Games/Entertainment",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Utilities"
+]
+
+[project.urls]
+repository = "https://github.com/aropan/Elo-MMR-Py"
+issues = "https://github.com/aropan/Elo-MMR-Py/issues"
+discussion = "https://github.com/aropan/Elo-MMR-Py/discussions"
 
 [[tool.setuptools-rust.ext-modules]]
 target = "elo_mmr_py.elo_mmr_python_bindings"
