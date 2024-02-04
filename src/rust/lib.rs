@@ -5,6 +5,14 @@ use multi_skill::systems::{PlayerEvent, get_rating_system_by_name};
 use multi_skill::experiment_config::{Experiment, ExperimentResults};
 use multi_skill::data_processing::{Dataset, Contest, ContestDataset, BoxedDataset, read_json, ContestRatingParams};
 
+/// A Contest object represents a competition.
+///
+/// Args:
+///     standings (List[Tuple[str, int, int]]): A list of tuples, each representing
+///         a participant's standing with their name, low rank, and high rank.
+///     name (Optional[str]): The name of the contest. Defaults to "".
+///     time_seconds (Optional[int]): The duration of the contest in seconds. Defaults to 0.
+///     url (Optional[str]): The URL of the contest. Defaults to None.
 #[pyclass(name="Contest")]
 #[derive(Clone)]
 struct PyContest {
@@ -14,14 +22,16 @@ struct PyContest {
 #[pymethods]
 impl PyContest {
     #[new]
-    #[args(url="None")]
+    #[args(standings, name = "None", time_seconds = "None", url = "None")]
     fn new(
-        name: String,
-        time_seconds: u64,
         standings: Vec<(String, usize, usize)>,
+        name: Option<String>,
+        time_seconds: Option<u64>,
         url: Option<String>,
     ) -> PyResult<Self> {
         let rating_params = ContestRatingParams::default();
+        let name = name.unwrap_or("".to_string());
+        let time_seconds = time_seconds.unwrap_or(0);
         Ok(PyContest {
             inner: Contest {
                 name,
@@ -62,6 +72,14 @@ impl Dataset for ContestVec {
     fn get(&self, index: usize) -> Contest { self.0.get(index).unwrap().clone() }
 }
 
+/// Represents an event for a player in a contest.
+///
+/// Args:
+///     contest_index (int): The index of the contest.
+///     rating_mu (int): The player's rating mean after the contest.
+///     rating_sig (int): The player's rating deviation after the contest.
+///     perf_score (int): The performance score of the player in the contest.
+///     place (int): The place of the player in the contest.
 #[pyclass(name="PlayerEvent")]
 #[derive(Clone)]
 struct PyPlayerEvent {
@@ -103,6 +121,13 @@ impl From<PlayerEvent> for PyPlayerEvent {
     }
 }
 
+/// Represents the result of a rating calculation.
+///
+/// Attributes:
+///     players_events (Dict[str, List[PyPlayerEvent]]): A dictionary mapping player IDs
+///         to a list of player events. Each event is an instance of `PyPlayerEvent`,
+///         which contains information about the player's performance in a particular contest.
+///     secs_elapsed (float): The number of seconds elapsed during the rating calculation process.
 #[pyclass(name="RateResult")]
 struct PyRateResult {
     #[pyo3(get)]
@@ -142,7 +167,23 @@ fn from_experiment_results(experiment_results: ExperimentResults) -> PyResult<Py
     })
 }
 
+/// Rates players based on their performance in contests.
+///
+/// Args:
+///     system (str): The name of the rating system to use (e.g., "mmr", "glicko").
+///     contests (List[PyContest]): A list of contest objects, each representing a single contest.
+///     mu_noob (float): The initial mean rating for new players.
+///     sig_noob (float): The initial rating deviation for new players.
+///     load_checkpoint (Optional[str]): The path to a file from which to load the rating system state.
+///         If None, the rating system starts without prior state.
+///     save_checkpoint (Optional[str]): The path to a file where the rating system state will be saved
+///         after processing all contests. If None, the state is not saved.
+///
+/// Returns:
+///     PyRateResult: An object containing the results of the rating process, including
+///     the final ratings of players and the time elapsed during the rating calculation.
 #[pyfunction]
+#[pyo3(text_signature = "(system, contests, mu_noob, sig_noob, load_checkpoint=None, save_checkpoint=None)")]
 fn rate(
     system: String,
     contests: Vec<PyContest>,

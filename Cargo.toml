@@ -5,7 +5,7 @@ edition = "2021"
 
 [lib]
 name = "elo_mmr_python_bindings"
-path = "rust/lib.rs"
+path = "src/rust/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]

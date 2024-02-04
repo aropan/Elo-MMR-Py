@@ -1,0 +1,63 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      cibw_build:
+        description: 'CIBW_BUILD environment variable'
+
+jobs:
+  build-wheels:
+    name: Build ${{ matrix.platform || matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu
+        - macos
+        - windows
+        include:
+        - os: ubuntu
+          platform: linux
+        - os: windows
+          ls: dir
+
+    runs-on: ${{ format('{0}-latest', matrix.os) }}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up python
+      uses: actions/setup-python@v1
+      with:
+        python-version: '3.9'
+
+    - name: Set up rust
+      if: matrix.os != 'ubuntu'
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        override: true
+
+    - name: Install python dependencies
+      run: pip install -U setuptools wheel twine cibuildwheel
+
+    - name: Build wheel
+      run: cibuildwheel --output-dir dist --platform ${{ matrix.platform || matrix.os }}
+      env:
+        CIBW_BUILD: ${{ inputs.cibw_build }}
+
+    - name: List dist files
+      run: ${{ matrix.ls || 'ls -lh' }} dist/
+
+    - name: Twine check
+      run: twine check dist/*
+
+    - name: Upload to pypi
+      run: twine upload dist/*
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}

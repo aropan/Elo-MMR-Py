@@ -1,10 +1,37 @@
 [build-system]
-requires = ["setuptools", "setuptools-rust"]
+requires = ["setuptools", "wheel", "setuptools-rust"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "Elo-MMR-Py"
-version = "1.0"
+version = "1.0.0"
+readme = "README.md"
 
 [[tool.setuptools-rust.ext-modules]]
 target = "elo_mmr_py.elo_mmr_python_bindings"
+
+[tool.cibuildwheel]
+skip = "*musllinux* pp* cp27-* cp35-* cp36-* cp37-* cp38-*"
+build-verbosity = 1
+environment = { VERBOSE = "1" }
+test-requires = "pytest"
+test-command = "pytest {project}/tests -s -v"
+
+[tool.cibuildwheel.linux]
+environment = 'PATH="$HOME/.cargo/bin:$PATH"'
+before-build = "yum install -y openssl-devel && curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=nightly --profile=minimal -y && rustup show"
+
+[tool.cibuildwheel.macos]
+environment = 'PATH="$HOME/.cargo/bin:$PATH"'
+before-build = "rustup default nightly && rustup show"
+
+[tool.cibuildwheel.windows]
+environment = 'PATH="$UserProfile\.cargo\bin;$PATH"'
+
+[[tool.cibuildwheel.overrides]]
+select = "*win32*"
+before-build = "rustup toolchain install nightly-i686-pc-windows-msvc && rustup default nightly-i686-pc-windows-msvc && rustup override set nightly-i686-pc-windows-msvc && rustup show"
+
+[[tool.cibuildwheel.overrides]]
+select = "*win_amd64*"
+before-build = "rustup toolchain install nightly-x86_64-pc-windows-msvc && rustup default nightly-x86_64-pc-windows-msvc && rustup override set nightly-x86_64-pc-windows-msvc && rustup show"

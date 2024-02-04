@@ -4,6 +4,7 @@ __pycache__/
 target/
 build/
 dist/
+wheelhouse/
 
 *.so
 *.dll

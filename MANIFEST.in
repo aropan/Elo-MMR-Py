@@ -1,2 +1,2 @@
 include Cargo.toml
-recursive-include rust *
+recursive-include src/rust *

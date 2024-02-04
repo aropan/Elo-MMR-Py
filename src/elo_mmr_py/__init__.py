@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 
-from typing import List, Optional
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
-from elo_mmr_py.elo_mmr_python_bindings import Contest, RateResult
+from elo_mmr_py.elo_mmr_python_bindings import Contest, PlayerEvent
 from elo_mmr_py.elo_mmr_python_bindings import rate as rust_rate
+
+
+@dataclass
+class Player:
+    name: str
+    rating: int
+    events: List[PlayerEvent]
 
 
 def rate(
@@ -13,7 +21,7 @@ def rate(
     sig_noob: float = 350.,
     load_checkpoint: Optional[str] = None,
     save_checkpoint: Optional[str] = None,
-) -> RateResult:
+) -> Dict[str, Player]:
     rate_result = rust_rate(
         system,
         contests,
@@ -22,4 +30,8 @@ def rate(
         load_checkpoint=load_checkpoint,
         save_checkpoint=save_checkpoint,
     )
-    return rate_result
+    ret = {
+        name: Player(name, events[-1].rating_mu, events)
+        for name, events in rate_result.players_events.items()
+    }
+    return ret
