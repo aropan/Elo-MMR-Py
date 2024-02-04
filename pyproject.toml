@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Elo-MMR-Py"
-version = "1.0.0"
+version = "1.0.1"
 readme = "README.md"
 
 [[tool.setuptools-rust.ext-modules]]

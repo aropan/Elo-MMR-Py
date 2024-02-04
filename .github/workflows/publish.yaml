@@ -57,7 +57,7 @@ jobs:
       run: twine check dist/*
 
     - name: Upload to pypi
-      run: twine upload dist/*
+      run: twine upload dist/* --verbose --skip-existing
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
