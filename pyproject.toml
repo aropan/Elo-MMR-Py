@@ -23,9 +23,9 @@ classifiers = [
 ]
 
 [project.urls]
-repository = "https://github.com/aropan/Elo-MMR-Py"
-issues = "https://github.com/aropan/Elo-MMR-Py/issues"
-discussion = "https://github.com/aropan/Elo-MMR-Py/discussions"
+Discussion = "https://github.com/aropan/Elo-MMR-Py/discussions"
+Issues = "https://github.com/aropan/Elo-MMR-Py/issues"
+Repository = "https://github.com/aropan/Elo-MMR-Py"
 
 [[tool.setuptools-rust.ext-modules]]
 target = "elo_mmr_py.elo_mmr_python_bindings"
