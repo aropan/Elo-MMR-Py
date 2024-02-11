@@ -1,4 +1,4 @@
-name: Publish to PyPI
+name: Publish
 
 on:
   push:
@@ -11,53 +11,75 @@ on:
 
 jobs:
   build-wheels:
-    name: Build ${{ matrix.platform || matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-        - ubuntu
-        - macos
-        - windows
         include:
-        - os: ubuntu
-          platform: linux
-        - os: windows
-          ls: dir
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+            ls: dir
+          - os: macos-latest
+            platform: macos
 
-    runs-on: ${{ format('{0}-latest', matrix.os) }}
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-    - name: Set up python
-      uses: actions/setup-python@v1
-      with:
-        python-version: '3.9'
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
 
-    - name: Set up rust
-      if: matrix.os != 'ubuntu'
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: nightly
-        override: true
+      - name: Set up rust
+        if: matrix.platform != 'linux'
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
 
-    - name: Install python dependencies
-      run: pip install -U setuptools wheel twine cibuildwheel
+      - name: Install python dependencies
+        run: pip install -U setuptools wheel twine cibuildwheel build
 
-    - name: Build wheel
-      run: cibuildwheel --output-dir dist --platform ${{ matrix.platform || matrix.os }}
-      env:
-        CIBW_BUILD: ${{ inputs.cibw_build }}
+      - name: Package source distribution
+        if: matrix.platform == 'linux'
+        run: |
+          python -m build --sdist -o dist/
 
-    - name: List dist files
-      run: ${{ matrix.ls || 'ls -lh' }} dist/
+      - name: Build wheel
+        run: cibuildwheel --output-dir dist/ --platform ${{ matrix.platform }}
+        env:
+          CIBW_BUILD: ${{ github.event.inputs.cibw_build }}
 
-    - name: Twine check
-      run: twine check dist/*
+      - name: List dist files
+        run: ${{ matrix.ls || 'ls -lh' }} dist/
 
-    - name: Upload to pypi
-      run: twine upload dist/* --verbose --skip-existing
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      - uses: actions/upload-artifact@v3
+        with:
+          path: |
+            ./dist/*.whl
+            ./dist/*.tar.gz
+
+      - name: Twine check
+        run: twine check dist/*
+
+  upload-pypi:
+    needs:
+      - build-wheels
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'push'
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: dist
+
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip_existing: true

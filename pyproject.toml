@@ -39,19 +39,28 @@ test-command = "pytest {project}/tests -s -v"
 
 [tool.cibuildwheel.linux]
 environment = 'PATH="$HOME/.cargo/bin:$PATH"'
-before-build = "yum install -y openssl-devel && curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=nightly --profile=minimal -y && rustup show"
+before-build = "yum install -y openssl-devel && curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y && rustup show"
 
 [tool.cibuildwheel.macos]
+archs = 'x86_64 arm64'
 environment = 'PATH="$HOME/.cargo/bin:$PATH"'
-before-build = "rustup default nightly && rustup show"
+before-build = "rustup default stable && rustup show"
+
+[[tool.cibuildwheel.overrides]]
+select = "*macos*x86_64*"
+before-build = "rustup target add --toolchain stable x86_64-apple-darwin && rustup default stable-x86_64-apple-darwin && rustup show"
+
+[[tool.cibuildwheel.overrides]]
+select = "*macos*arm64*"
+before-build = "rustup target add --toolchain stable aarch64-apple-darwin && rustup default stable-aarch64-apple-darwin && rustup show"
 
 [tool.cibuildwheel.windows]
 environment = 'PATH="$UserProfile\.cargo\bin;$PATH"'
 
 [[tool.cibuildwheel.overrides]]
 select = "*win32*"
-before-build = "rustup toolchain install nightly-i686-pc-windows-msvc && rustup default nightly-i686-pc-windows-msvc && rustup override set nightly-i686-pc-windows-msvc && rustup show"
+before-build = "rustup toolchain install stable-i686-pc-windows-msvc && rustup default stable-i686-pc-windows-msvc && rustup override set stable-i686-pc-windows-msvc && rustup show"
 
 [[tool.cibuildwheel.overrides]]
 select = "*win_amd64*"
-before-build = "rustup toolchain install nightly-x86_64-pc-windows-msvc && rustup default nightly-x86_64-pc-windows-msvc && rustup override set nightly-x86_64-pc-windows-msvc && rustup show"
+before-build = "rustup toolchain install stable-x86_64-pc-windows-msvc && rustup default stable-x86_64-pc-windows-msvc && rustup override set stable-x86_64-pc-windows-msvc && rustup show"
