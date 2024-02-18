@@ -10,7 +10,7 @@ You can install using pip. This is the easiest way to install the package and it
 
 To install the latest released version from PyPI, run the following command:
 
-```python
+```
 pip install Elo-MMR-Py
 ```
 
@@ -21,7 +21,7 @@ This will download and install the latest version of Elo-MMR-Py from PyPI.
 To install Elo-MMR-Py directly from the source code using Git, run:
 
 
-```python
+```
 pip install git+https://github.com/aropan/Elo-MMR-Py.git
 ```
 
@@ -39,10 +39,7 @@ contests = [
     Contest(standings=[('player_4', 0, 0), ('player_1', 1, 1), ('player_2', 2, 2), ('player_3', 3, 3)]),
     Contest(standings=[('player_4', 0, 0), ('player_1', 1, 1), ('player_2', 2, 2), ('player_3', 3, 3)]),
 ]
-players = rate(contests)
-
-from pprint import pprint
-pprint(players)
+rate(contests)
 ```
 
 Output for example above:
