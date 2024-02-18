@@ -26,18 +26,17 @@ def rate(
     Rates players based on their performance in contests.
 
     Args:
-        system (str): The name of the rating system to use (e.g., "mmr", "glicko").
+        system (str): The name of the rating system to use (e.g., "mmr", "glicko"). Default is "mmr".
         contests (List[PyContest]): A list of contest objects, each representing a single contest.
-        mu_noob (float): The initial mean rating for new players.
-        sig_noob (float): The initial rating deviation for new players.
+        mu_noob (float): The initial mean rating for new players. Default is 1500.
+        sig_noob (float): The initial rating deviation for new players. Default is 350.
         load_checkpoint (Optional[str]): The path to a file from which to load the rating system state.
-        If None, the rating system starts without prior state.
+                                         If None, the rating system starts without prior state.
         save_checkpoint (Optional[str]): The path to a file where the rating system state will be saved
-        after processing all contests. If None, the state is not saved.
+                                         after processing all contests. If None, the state is not saved.
 
     Returns:
-        PyRateResult: An object containing the results of the rating process, including
-        the final ratings of players and the time elapsed during the rating calculation.
+        Dict[str, Player]: A dictionary mapping player names to their ratings.
     """
 
     rate_result = rust_rate(
