@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import tempfile
+
 from elo_mmr_py import Contest, rate
 
 
@@ -47,3 +49,19 @@ def test_rate_contests():
     ratings = sorted(players.values(), key=lambda player: player.rating, reverse=True)
     ranking = [player.name for player in ratings]
     assert ranking == ['player_4', 'player_1', 'player_2', 'player_3']
+
+
+def test_save_and_load_checkpoints():
+    contests = [
+        Contest(standings=[('player_1', 0, 0), ('player_2', 1, 1), ('player_3', 2, 2)]),
+        Contest(standings=[('player_1', 0, 1), ('player_2', 0, 1), ('player_3', 2, 2)]),
+        Contest(standings=[('player_1', 0, 0), ('player_2', 1, 2), ('player_3', 1, 2)]),
+        Contest(standings=[('player_4', 0, 0), ('player_1', 1, 1), ('player_2', 2, 2), ('player_3', 3, 3)]),
+        Contest(standings=[('player_4', 0, 0), ('player_1', 1, 1), ('player_2', 2, 2), ('player_3', 3, 3)]),
+    ]
+    with tempfile.NamedTemporaryFile() as save_checkpoint:
+        r1 = rate(contests, save_checkpoint=save_checkpoint.name)
+        r2 = rate([], load_checkpoint=save_checkpoint.name)
+        r3 = rate(contests, load_checkpoint=save_checkpoint.name)
+        assert r1['player_4'].rating == r2['player_4'].rating
+        assert r2['player_4'].rating != r3['player_4'].rating
