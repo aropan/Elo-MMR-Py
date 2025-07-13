@@ -3,7 +3,39 @@ use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 use multi_skill::systems::{PlayerEvent, get_rating_system_by_name};
 use multi_skill::experiment_config::{Experiment, ExperimentResults};
-use multi_skill::data_processing::{Dataset, Contest, ContestDataset, BoxedDataset, read_json, ContestRatingParams};
+use multi_skill::data_processing::{
+    Contest, ContestDataset, ContestRatingParams, Dataset, BoxedDataset, read_json,
+};
+
+#[pyclass(name = "ContestRatingParams")]
+#[derive(Clone, Copy)]
+struct PyContestRatingParams {
+    inner: ContestRatingParams,
+}
+
+#[pymethods]
+impl PyContestRatingParams {
+    #[new]
+    #[args(weight = "1.0", perf_ceiling = "f64::INFINITY")]
+    fn new(weight: f64, perf_ceiling: f64) -> PyResult<Self> {
+        Ok(PyContestRatingParams {
+            inner: ContestRatingParams {
+                weight,
+                perf_ceiling,
+            },
+        })
+    }
+
+    #[getter]
+    fn weight(&self) -> PyResult<f64> {
+        Ok(self.inner.weight)
+    }
+
+    #[getter]
+    fn perf_ceiling(&self) -> PyResult<f64> {
+        Ok(self.inner.perf_ceiling)
+    }
+}
 
 /// A Contest object represents a competition.
 ///
@@ -13,6 +45,8 @@ use multi_skill::data_processing::{Dataset, Contest, ContestDataset, BoxedDatase
 ///     name (Optional[str]): The name of the contest. Defaults to "".
 ///     time_seconds (Optional[int]): The duration of the contest in seconds. Defaults to 0.
 ///     url (Optional[str]): The URL of the contest. Defaults to None.
+///     rating_params (Optional[PyContestRatingParams]): The rating parameters for the contest.
+///         Defaults to ContestRatingParams(weight=1.0, perf_ceiling=inf).
 #[pyclass(name="Contest")]
 #[derive(Clone)]
 struct PyContest {
@@ -22,14 +56,27 @@ struct PyContest {
 #[pymethods]
 impl PyContest {
     #[new]
-    #[args(standings, name = "None", time_seconds = "None", url = "None")]
+    #[args(
+        standings,
+        name = "None",
+        time_seconds = "None",
+        url = "None",
+        rating_params = "None"
+    )]
     fn new(
         standings: Vec<(String, usize, usize)>,
         name: Option<String>,
         time_seconds: Option<u64>,
         url: Option<String>,
+        rating_params: Option<PyContestRatingParams>,
     ) -> PyResult<Self> {
-        let rating_params = ContestRatingParams::default();
+        let rating_params = match rating_params {
+            Some(p) => p.inner,
+            None => ContestRatingParams {
+                weight: 1.0,
+                perf_ceiling: f64::INFINITY,
+            },
+        };
         let name = name.unwrap_or("".to_string());
         let time_seconds = time_seconds.unwrap_or(0);
         Ok(PyContest {
@@ -61,6 +108,13 @@ impl PyContest {
     #[getter]
     fn url(&self) -> PyResult<Option<&str>> {
         Ok(self.inner.url.as_deref())
+    }
+
+    #[getter]
+    fn rating_params(&self) -> PyResult<PyContestRatingParams> {
+        Ok(PyContestRatingParams {
+            inner: self.inner.rating_params,
+        })
     }
 }
 
@@ -215,5 +269,6 @@ fn elo_mmr_python_bindings(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPlayerEvent>()?;
     m.add_class::<PyRateResult>()?;
     m.add_wrapped(wrap_pyfunction!(rate))?;
+    m.add_class::<PyContestRatingParams>()?;
     Ok(())
 }

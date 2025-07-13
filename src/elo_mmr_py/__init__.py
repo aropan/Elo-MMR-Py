@@ -3,7 +3,11 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from elo_mmr_py.elo_mmr_python_bindings import Contest, PlayerEvent
+from elo_mmr_py.elo_mmr_python_bindings import (
+    Contest,
+    ContestRatingParams,
+    PlayerEvent,
+)
 from elo_mmr_py.elo_mmr_python_bindings import rate as rust_rate
 
 
@@ -16,15 +20,14 @@ class Player:
 
 def rate(
     contests: List[Contest],
-    system: str = 'mmr',
-    mu_noob: float = 1500.,
-    sig_noob: float = 350.,
+    system: str = "mmr",
+    mu_noob: float = 1500.0,
+    sig_noob: float = 350.0,
     load_checkpoint: Optional[str] = None,
     save_checkpoint: Optional[str] = None,
 ) -> Dict[str, Player]:
     """
     Rates players based on their performance in contests.
-
     Args:
         system (str): The name of the rating system to use (e.g., "mmr", "glicko"). Default is "mmr".
         contests (List[PyContest]): A list of contest objects, each representing a single contest.
@@ -34,14 +37,18 @@ def rate(
                                          If None, the rating system starts without prior state.
         save_checkpoint (Optional[str]): The path to a file where the rating system state will be saved
                                          after processing all contests. If None, the state is not saved.
-
     Returns:
         Dict[str, Player]: A dictionary mapping player names to their ratings.
     """
 
+    # Filter out contests with zero weight, as they can cause issues with the rating system.
+    filtered_contests = [
+        c for c in contests if c.rating_params and c.rating_params.weight > 0
+    ]
+
     rate_result = rust_rate(
         system,
-        contests,
+        filtered_contests,
         mu_noob=mu_noob,
         sig_noob=sig_noob,
         load_checkpoint=load_checkpoint,
