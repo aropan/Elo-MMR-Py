@@ -81,8 +81,9 @@ def rate(
 
     Args:
         contests: Chronologically ordered competitions to process.
-        system: Rating system name or an :class:`EloMmrConfig`. ``mmr`` is exact
-            and remains the default; ``mmr-fast`` is an opt-in approximation.
+        system: Rating system name or an
+            [EloMmrConfig][elo_mmr_py.EloMmrConfig]. `mmr` is exact and remains
+            the default; `mmr-fast` is an opt-in approximation.
         mu_noob: Initial mean rating for newly observed participants.
         sig_noob: Initial rating uncertainty for newly observed participants.
         load_checkpoint: Optional v2 or legacy v1 checkpoint to continue.
@@ -125,7 +126,8 @@ def rate_latest(
 
     This is the preferred API for leaderboards and services that only need each
     participant's current rating, uncertainty, and number of rated contests.
-    Checkpoint semantics and validation are identical to :func:`rate`.
+    Checkpoint semantics and validation are identical to
+    [rate][elo_mmr_py.rate].
     """
 
     return _rust_rate_latest(

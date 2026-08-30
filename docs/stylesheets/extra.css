@@ -1,0 +1,243 @@
+/* A restrained, information-dense layer on top of Material for MkDocs. */
+
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #263b59;
+  --md-primary-fg-color--light: #3d5678;
+  --md-primary-fg-color--dark: #192a43;
+  --md-accent-fg-color: #2563b8;
+  --md-typeset-a-color: #1f5fae;
+  --elo-border: #d8e0ea;
+  --elo-surface: #fbfcfe;
+  --elo-surface-strong: #f1f5f9;
+  --elo-code-border: #dce3eb;
+  --elo-table-hover: #f7f9fc;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #172338;
+  --md-primary-fg-color--light: #253652;
+  --md-primary-fg-color--dark: #101a2a;
+  --md-accent-fg-color: #6ca6e8;
+  --md-typeset-a-color: #79afe9;
+  --elo-border: #34445a;
+  --elo-surface: #182234;
+  --elo-surface-strong: #202d42;
+  --elo-code-border: #3a4a60;
+  --elo-table-hover: #1d293c;
+}
+
+.md-header {
+  box-shadow: 0 1px 0 rgb(0 0 0 / 12%);
+}
+
+.md-grid {
+  max-width: 88rem;
+}
+
+.md-content__inner {
+  padding-bottom: 3rem;
+  padding-top: 1.6rem;
+}
+
+.md-typeset {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
+.md-header,
+.md-nav,
+.md-search {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.md-typeset h1 {
+  color: var(--md-typeset-color);
+  font-size: 1.9rem;
+  font-weight: 680;
+  letter-spacing: -0.025em;
+  margin-bottom: 1.2rem;
+}
+
+.md-typeset h2:not(.doc-heading) {
+  border-bottom: 1px solid var(--elo-border);
+  font-size: 1.3rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  padding-bottom: 0.35rem;
+}
+
+.md-typeset h3:not(.doc-heading) {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.md-typeset a {
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.16em;
+}
+
+.md-typeset a:hover {
+  text-decoration: underline;
+}
+
+.md-typeset code,
+.md-typeset kbd,
+.md-typeset pre {
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", "Roboto Mono", Consolas, monospace;
+}
+
+.md-typeset :not(pre) > code {
+  border: 1px solid var(--elo-code-border);
+  border-radius: 0.22rem;
+  font-size: 0.82em;
+  overflow-wrap: normal;
+  padding: 0.06em 0.28em;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.md-typeset div.highlight {
+  border: 1px solid var(--elo-border);
+  border-radius: 0.4rem;
+  overflow: hidden;
+}
+
+.md-typeset pre > code {
+  border: 0;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  padding: 0;
+}
+
+.md-typeset table:not([class]) {
+  border: 1px solid var(--elo-border);
+  border-radius: 0.4rem;
+  box-shadow: none;
+  font-size: 0.74rem;
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background: var(--elo-surface-strong);
+  font-size: 0.68rem;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.md-typeset table:not([class]) td,
+.md-typeset table:not([class]) th {
+  border-bottom: 1px solid var(--elo-border);
+  padding: 0.62rem 0.78rem;
+  vertical-align: top;
+}
+
+.md-typeset table:not([class]) tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.md-typeset table:not([class]) tbody tr:hover {
+  background: var(--elo-table-hover);
+}
+
+/* Give top-level API objects a clear boundary without turning them into large banners. */
+.md-typeset > .doc-object {
+  background: var(--elo-surface);
+  border: 1px solid var(--elo-border);
+  border-radius: 0.55rem;
+  margin: 1.25rem 0 1.5rem;
+  padding: 0.9rem 1rem 1rem;
+}
+
+.md-typeset > .doc-object > .doc-heading {
+  background: var(--elo-surface-strong);
+  border: 1px solid var(--elo-border);
+  border-left: 3px solid var(--md-accent-fg-color);
+  border-radius: 0.35rem;
+  line-height: 1.45;
+  margin: 0 0 0.8rem;
+  padding: 0.55rem 0.7rem;
+}
+
+.md-typeset > .doc-object > .doc-heading code {
+  background: transparent;
+  border: 0;
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.55;
+  padding: 0;
+  white-space: normal;
+}
+
+.md-typeset > .doc-object > .doc-contents {
+  margin-left: 0;
+  padding: 0 0.15rem;
+}
+
+.md-typeset .doc-section-title {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.md-typeset .doc-children {
+  border-left: 2px solid var(--elo-border);
+  margin-left: 0.25rem;
+  margin-top: 1.25rem;
+  padding-left: 1rem;
+}
+
+.md-typeset .doc-children .doc-object {
+  margin: 1rem 0 1.25rem;
+}
+
+.md-typeset .doc-children .doc-heading {
+  border: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  margin: 0 0 0.35rem;
+  padding: 0;
+}
+
+.md-typeset .doc-children .doc-heading code {
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.md-typeset .doc-children .doc-contents {
+  margin-left: 0.35rem;
+}
+
+@media screen and (max-width: 44.984375em) {
+  .md-content__inner {
+    padding-top: 1rem;
+  }
+
+  .md-typeset h1 {
+    font-size: 1.65rem;
+  }
+
+  .md-typeset > .doc-object {
+    border-left: 0;
+    border-radius: 0;
+    border-right: 0;
+    margin-left: -0.8rem;
+    margin-right: -0.8rem;
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+  }
+
+  .md-typeset .doc-children {
+    margin-left: 0;
+    padding-left: 0.65rem;
+  }
+}
