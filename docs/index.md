@@ -17,9 +17,9 @@ The following file is included verbatim and executed by the test suite:
 Output:
 
 ```text
-1. Ada: 1705 ±171 (1 contests)
-2. Grace: 1500 ±171 (1 contests)
-3. Linus: 1295 ±171 (1 contests)
+1. Ada: 1705 ±171 (1 contest)
+2. Grace: 1500 ±171 (1 contest)
+3. Linus: 1295 ±171 (1 contest)
 ```
 
 The [Concepts guide](concepts.md#full-history-versus-latest-state) explains which

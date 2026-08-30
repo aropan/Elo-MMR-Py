@@ -1,0 +1,106 @@
+name: Bug report
+description: Report a reproducible problem in Elo-MMR-Py
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem.
+
+        Do not report security vulnerabilities here. Use
+        [private vulnerability reporting](https://github.com/aropan/Elo-MMR-Py/security/advisories/new)
+        instead.
+
+  - type: input
+    id: package-version
+    attributes:
+      label: Elo-MMR-Py version
+      description: Run `python -c "import elo_mmr_py; print(elo_mmr_py.__version__)"`.
+      placeholder: 2.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: Run `python --version`.
+      placeholder: CPython 3.13.7
+    validations:
+      required: true
+
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Operating system
+      options:
+        - Linux x86_64
+        - Linux aarch64
+        - macOS x86_64
+        - macOS arm64
+        - Windows x86_64
+        - Other or source build
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation
+      options:
+        - PyPI wheel
+        - Built from the PyPI source distribution
+        - Built from a Git checkout
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: rating-system
+    attributes:
+      label: Rating system
+      description: Include the system name or summarize the `EloMmrConfig` values, if relevant.
+      placeholder: mmr
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide the smallest self-contained Python example that demonstrates the problem.
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: Include the complete exception and traceback when one is available.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: Explain what you expected and why.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other relevant details, logs, or checkpoint characteristics.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched the existing issues and discussions for this problem.
+          required: true
+        - label: This report does not contain credentials, private data, or an undisclosed vulnerability.
+          required: true

@@ -12,7 +12,8 @@ contests = [
 
 leaderboard = sorted(rate_latest(contests).values(), key=lambda player: -player.rating)
 for position, player in enumerate(leaderboard, start=1):
+    contest_label = 'contest' if player.contests_played == 1 else 'contests'
     print(
         f'{position}. {player.name}: {player.rating} '
-        f'±{player.rating_sig} ({player.contests_played} contests)'
+        f'±{player.rating_sig} ({player.contests_played} {contest_label})'
     )

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and usage help
+    url: https://github.com/aropan/Elo-MMR-Py/discussions/new?category=q-a
+    about: Ask how to use Elo-MMR-Py in the Q&A discussion category.
+  - name: Feature ideas
+    url: https://github.com/aropan/Elo-MMR-Py/discussions/new?category=ideas
+    about: Propose and discuss an idea before opening implementation work.
+  - name: Security vulnerability
+    url: https://github.com/aropan/Elo-MMR-Py/security/advisories/new
+    about: Privately report a suspected security vulnerability.

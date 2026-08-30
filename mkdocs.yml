@@ -54,11 +54,15 @@ plugins:
             docstring_style: google
             heading_level: 2
             merge_init_into_class: true
+            line_length: 88
             filters:
               - "!^_(?!_new__$)"
+            separate_signature: true
             show_if_no_docstring: true
             show_root_heading: true
-            show_source: true
+            show_signature_annotations: true
+            show_source: false
+            signature_crossrefs: true
 
 markdown_extensions:
   - admonition

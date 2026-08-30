@@ -25,9 +25,9 @@ def test_documented_example_runs() -> None:
     )
 
     assert completed.stdout.splitlines() == [
-        '1. Ada: 1705 ±171 (1 contests)',
-        '2. Grace: 1500 ±171 (1 contests)',
-        '3. Linus: 1295 ±171 (1 contests)',
+        '1. Ada: 1705 ±171 (1 contest)',
+        '2. Grace: 1500 ±171 (1 contest)',
+        '3. Linus: 1295 ±171 (1 contest)',
     ]
 
 

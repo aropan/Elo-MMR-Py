@@ -36,8 +36,14 @@ Defaults and validation are defined in the canonical
 guide.
 
 ::: elo_mmr_py.PlayerEvent
+    options:
+      filters:
+        - "!^_"
 
 ::: elo_mmr_py.PlayerRating
+    options:
+      filters:
+        - "!^_"
 
 `contest_index` is global across checkpoint batches. `rating`, `rating_mu`,
 `rating_sig`, and `perf_score` are rounded integer presentation values.
