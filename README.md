@@ -1,77 +1,87 @@
 # Elo-MMR-Py
 
-Python bindings for [Elo-MRR](https://github.com/EbTech/Elo-MMR).
+[![CI](https://github.com/aropan/Elo-MMR-Py/actions/workflows/ci.yml/badge.svg)](https://github.com/aropan/Elo-MMR-Py/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue.svg)](https://aropan.github.io/Elo-MMR-Py/)
+[![PyPI](https://img.shields.io/pypi/v/Elo-MMR-Py.svg)](https://pypi.org/project/Elo-MMR-Py/)
+[![Python](https://img.shields.io/pypi/pyversions/Elo-MMR-Py.svg)](https://pypi.org/project/Elo-MMR-Py/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+Fast Python bindings for [Elo-MMR](https://github.com/EbTech/Elo-MMR), a
+multiplayer rating method designed for contests with many participants. The
+rating calculation runs in Rust and releases Python's GIL, while the public API
+uses ordinary Python objects and precise type information.
+
+The exact `mmr` algorithm is the default. The approximate `mmr-fast` variant
+remains an explicit choice.
 
 ## Installation
 
-You can install using pip. This is the easiest way to install the package and its dependencies.
-
-### Install from PyPI
-
-To install the latest released version from PyPI, run the following command:
-
-```
-pip install Elo-MMR-Py
+```bash
+python -m pip install Elo-MMR-Py
 ```
 
-This will download and install the latest version of Elo-MMR-Py from PyPI.
+Binary ABI3 wheels support standard CPython 3.11 and newer on Linux x86_64 and
+aarch64, macOS x86_64 and arm64, and Windows x86_64. PyPy, free-threaded CPython,
+and 32-bit platforms do not have prebuilt wheels.
 
-### Install from Source
+## Quickstart
 
-To install Elo-MMR-Py directly from the source code using Git, run:
-
-
-```
-pip install git+https://github.com/aropan/Elo-MMR-Py.git
-```
-
-#### Usage
-
-After installation, you can import and use Elo-MMR-Py in your Python projects:
+Use `rate_latest()` for leaderboards and services. It creates one immutable
+`PlayerRating` per participant instead of one Python object per historical event.
 
 ```python
-from elo_mmr_py import Contest, rate
+from elo_mmr_py import Contest, rate_latest
 
 contests = [
-    Contest(standings=[('player_1', 0, 0), ('player_2', 1, 1), ('player_3', 2, 2)]),
-    Contest(standings=[('player_1', 0, 1), ('player_2', 0, 1), ('player_3', 2, 2)]),
-    Contest(standings=[('player_1', 0, 0), ('player_2', 1, 2), ('player_3', 1, 2)]),
-    Contest(standings=[('player_4', 0, 0), ('player_1', 1, 1), ('player_2', 2, 2), ('player_3', 3, 3)]),
-    Contest(standings=[('player_4', 0, 0), ('player_1', 1, 1), ('player_2', 2, 2), ('player_3', 3, 3)]),
+    Contest(
+        standings=[('Ada', 0, 0), ('Grace', 1, 1), ('Linus', 2, 2)],
+        name='Example final',
+        time_seconds=1_700_000_000,
+    )
 ]
-rate(contests)
+
+leaderboard = sorted(rate_latest(contests).values(), key=lambda player: -player.rating)
+for player in leaderboard:
+    print(player.name, player.rating, player.rating_sig, player.contests_played)
 ```
 
-Output for example above:
+Use `rate()` when you need every historical rating event:
 
 ```python
-{'player_1': Player(name='player_1',
-                    rating=1675,
-                    events=[PyPlayerEvent(contest_index=0, rating_mu=1705, rating_sig=171, perf_score=1744, place=0),
-                            PyPlayerEvent(contest_index=1, rating_mu=1663, rating_sig=130, perf_score=1618, place=0),
-                            PyPlayerEvent(contest_index=2, rating_mu=1686, rating_sig=111, perf_score=1728, place=0),
-                            PyPlayerEvent(contest_index=3, rating_mu=1678, rating_sig=100, perf_score=1660, place=1),
-                            PyPlayerEvent(contest_index=4, rating_mu=1675, rating_sig=94, perf_score=1666, place=1)]),
- 'player_2': Player(name='player_2',
-                    rating=1483,
-                    events=[PyPlayerEvent(contest_index=0, rating_mu=1500, rating_sig=171, perf_score=1500, place=1),
-                            PyPlayerEvent(contest_index=1, rating_mu=1555, rating_sig=130, perf_score=1618, place=0),
-                            PyPlayerEvent(contest_index=2, rating_mu=1500, rating_sig=111, perf_score=1393, place=1),
-                            PyPlayerEvent(contest_index=3, rating_mu=1487, rating_sig=100, perf_score=1459, place=2),
-                            PyPlayerEvent(contest_index=4, rating_mu=1483, rating_sig=94, perf_score=1471, place=2)]),
- 'player_3': Player(name='player_3',
-                    rating=1279,
-                    events=[PyPlayerEvent(contest_index=0, rating_mu=1295, rating_sig=171, perf_score=1256, place=2),
-                            PyPlayerEvent(contest_index=1, rating_mu=1270, rating_sig=130, perf_score=1242, place=2),
-                            PyPlayerEvent(contest_index=2, rating_mu=1312, rating_sig=111, perf_score=1393, place=1),
-                            PyPlayerEvent(contest_index=3, rating_mu=1291, rating_sig=100, perf_score=1240, place=3),
-                            PyPlayerEvent(contest_index=4, rating_mu=1279, rating_sig=94, perf_score=1247, place=3)]),
- 'player_4': Player(name='player_4',
-                    rating=1809,
-                    events=[PyPlayerEvent(contest_index=3, rating_mu=1767, rating_sig=171, perf_score=1819, place=0),
-                            PyPlayerEvent(contest_index=4, rating_mu=1809, rating_sig=130, perf_score=1855, place=0)])}
+from elo_mmr_py import rate
+
+players = rate(contests)  # system='mmr' is the exact default
+ada_history = players['Ada'].events
 ```
 
-### Contributing
+Long-running services can retain state with `Rater`, and advanced Elo-MMR users
+can pass an immutable `EloMmrConfig`. Their canonical interfaces and executable
+example are in the [API documentation](https://aropan.github.io/Elo-MMR-Py/api/).
 
-Welcome contributions! If you would like to contribute to the project, please fork the repository and submit a pull request.
+## Standings and ties
+
+A standing is `(name, low_rank, high_rank)`. Ranks are zero-based and inclusive.
+An ordinary result has `low_rank == high_rank`; tied participants repeat the
+same interval. See [Contest representation](https://aropan.github.io/Elo-MMR-Py/concepts/#contest-representation)
+for a tie example and the complete ordering rules.
+
+## Rating systems
+
+`mmr` is the recommended exact default. `mmr-fast` is an explicit approximation
+whose benefit depends on the workload. See [Rating systems](https://aropan.github.io/Elo-MMR-Py/rating-systems/)
+for every supported mode and its constraints.
+
+## Checkpoints
+
+Both APIs accept `str | os.PathLike[str]` checkpoint paths and can atomically
+save or resume rating state. The [checkpoint guide](https://aropan.github.io/Elo-MMR-Py/checkpoints/)
+is the canonical reference for the schema, migration, compatibility, file
+permissions, symlinks, and failure behavior.
+
+## Documentation and development
+
+The complete guide covers [concepts](https://aropan.github.io/Elo-MMR-Py/concepts/),
+[API details](https://aropan.github.io/Elo-MMR-Py/api/), checkpoints,
+performance, errors, development, and releasing. Source setup and all required
+checks live in the [development guide](https://aropan.github.io/Elo-MMR-Py/development/);
+see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution policy.

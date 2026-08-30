@@ -1,0 +1,232 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  version:
+    name: Verify release provenance and package version
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read # Required to verify successful CI for the tagged commit.
+      contents: read
+    outputs:
+      version: ${{ steps.versions.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require the tagged commit on main with successful CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Release tag must point to a commit contained in origin/main" >&2
+            exit 1
+          fi
+          successful_runs="$(
+            gh run list \
+              --workflow ci.yml \
+              --commit "$GITHUB_SHA" \
+              --event push \
+              --status success \
+              --limit 1 \
+              --json databaseId \
+              --jq 'length'
+          )"
+          if [ "$successful_runs" -ne 1 ]; then
+            echo "Tagged commit has no successful push CI run on main" >&2
+            exit 1
+          fi
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Match tag and package version
+        id: versions
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import datetime as dt
+          import os
+          import re
+          import tomllib
+          from pathlib import Path
+
+          cargo = tomllib.loads(Path('Cargo.toml').read_text(encoding='utf-8'))
+          package_version = cargo['package']['version']
+          tag = os.environ['RELEASE_TAG']
+          if tag != f'v{package_version}':
+              raise SystemExit(f'tag {tag} does not match package version v{package_version}')
+          changelog = Path('CHANGELOG.md').read_text(encoding='utf-8')
+          if f'## [{package_version}] - Unreleased' in changelog:
+              raise SystemExit(
+                  f'CHANGELOG.md still marks version {package_version} as Unreleased'
+              )
+          headings = re.findall(
+              rf'^## \[{re.escape(package_version)}\] - (\d{{4}}-\d{{2}}-\d{{2}})$',
+              changelog,
+              flags=re.MULTILINE,
+          )
+          if len(headings) != 1:
+              raise SystemExit(
+                  f'CHANGELOG.md must contain exactly one dated {package_version} release heading'
+              )
+          try:
+              release_date = dt.date.fromisoformat(headings[0])
+          except ValueError as error:
+              raise SystemExit(f'invalid CHANGELOG release date: {headings[0]}') from error
+          if release_date > dt.datetime.now(dt.timezone.utc).date():
+              raise SystemExit(f'CHANGELOG release date {release_date} is in the future')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              print(f'version={package_version}', file=output)
+          print(f'Validated release {tag}')
+          PY
+
+  wheels:
+    name: ${{ matrix.id }} wheel
+    needs: version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: linux-x86_64
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            manylinux: '2_28'
+          - id: linux-aarch64
+            os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            manylinux: '2_28'
+          - id: macos-x86_64
+            os: macos-15-intel
+            target: x86_64-apple-darwin
+            manylinux: 'off'
+          - id: macos-arm64
+            os: macos-15
+            target: aarch64-apple-darwin
+            manylinux: 'off'
+          - id: windows-x86_64
+            os: windows-2025
+            target: x86_64-pc-windows-msvc
+            manylinux: 'off'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set reproducible build timestamp
+        shell: bash
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Read pinned build-tool versions
+        id: build-tools
+        shell: bash
+        run: python scripts/build_tool_versions.py >> "$GITHUB_OUTPUT"
+      - name: Build wheel
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          command: build
+          maturin-version: ${{ steps.build-tools.outputs.maturin_version }}
+          rust-toolchain: ${{ steps.build-tools.outputs.rust_toolchain }}
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
+          args: --release --locked --compatibility pypi --out dist
+      - name: Install only the built wheel
+        run: |
+          python -m pip install pytest==9.1.1
+          python -m pip install --no-index --find-links dist Elo-MMR-Py
+      - name: Test installed wheel
+        run: python -m pytest -q
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-wheel-${{ matrix.id }}
+          path: dist/*.whl
+          if-no-files-found: error
+
+  sdist:
+    name: Source distribution
+    needs: version
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: false
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - name: Set reproducible build timestamp
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" >> "$GITHUB_ENV"
+      - name: Build sdist
+        run: uv build --sdist --out-dir dist
+      - name: Install and test sdist
+        run: |
+          python -m venv artifact-venv
+          artifact-venv/bin/python -m pip install pytest==9.1.1
+          artifact-venv/bin/python -m pip install dist/*.tar.gz
+          artifact-venv/bin/python -m pytest -q
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish verified artifacts to PyPI
+    needs: [version, wheels, sdist]
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/project/Elo-MMR-Py/
+    permissions:
+      id-token: write # Required only for PyPI Trusted Publishing OIDC.
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Verify the complete artifact set
+        env:
+          PACKAGE_VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          wheels = sorted(Path('dist').glob('*.whl'))
+          sdists = sorted(Path('dist').glob('*.tar.gz'))
+          if len(wheels) != 5 or len(sdists) != 1:
+              raise SystemExit(f'expected 5 wheels and 1 sdist, got {wheels=} {sdists=}')
+          version = os.environ['PACKAGE_VERSION']
+          if any(version not in path.name for path in [*wheels, *sdists]):
+              raise SystemExit(f'an artifact filename does not contain version {version}')
+          for path in [*wheels, *sdists]:
+              print(path)
+          PY
+      - name: Publish with PyPI Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist
+          verbose: true

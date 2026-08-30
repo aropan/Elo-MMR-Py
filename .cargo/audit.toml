@@ -1,0 +1,10 @@
+# `paste` is unmaintained, but it is reachable only through the upstream
+# multi-skill -> statrs -> nalgebra -> simba dependency chain. Elo-MMR-Py does
+# not call that crate directly, and the pinned upstream revision exposes no
+# feature that removes it. Keep all future advisories and warnings blocking.
+[advisories]
+ignore = ["RUSTSEC-2024-0436"]
+
+[output]
+deny = ["warnings"]
+quiet = false

@@ -1,0 +1,58 @@
+{
+  "bob": {
+    "normal_factor": {
+      "mu": 1499.9999999999998,
+      "sig": 351.8238195460905
+    },
+    "logistic_factors": [
+      {
+        "mu": 1346.1013310280305,
+        "w_arg": 0.004628003060581631,
+        "w_out": 0.009256006121163262
+      }
+    ],
+    "event_history": [
+      {
+        "contest_index": 0,
+        "rating_mu": 1371,
+        "rating_sig": 171,
+        "perf_score": 1346,
+        "place": 1
+      }
+    ],
+    "approx_posterior": {
+      "mu": 1370.6085730184088,
+      "sig": 171.19544425359382
+    },
+    "update_time": 10,
+    "delta_time": 0
+  },
+  "alice": {
+    "normal_factor": {
+      "mu": 1499.9999999999998,
+      "sig": 351.8238195460905
+    },
+    "logistic_factors": [
+      {
+        "mu": 1653.8986689719695,
+        "w_arg": 0.004628003060581631,
+        "w_out": 0.009256006121163262
+      }
+    ],
+    "event_history": [
+      {
+        "contest_index": 0,
+        "rating_mu": 1629,
+        "rating_sig": 171,
+        "perf_score": 1654,
+        "place": 0
+      }
+    ],
+    "approx_posterior": {
+      "mu": 1629.3914269815912,
+      "sig": 171.19544425359382
+    },
+    "update_time": 10,
+    "delta_time": 0
+  }
+}

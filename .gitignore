@@ -10,4 +10,11 @@ wheelhouse/
 *.dll
 *.dylib
 
-Cargo.lock
+.venv/
+.coverage
+coverage.xml
+rust-coverage.lcov
+*.profraw
+htmlcov/
+site/
+.benchmarks/

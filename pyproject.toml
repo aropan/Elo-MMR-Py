@@ -1,66 +1,131 @@
 [build-system]
-requires = ["setuptools", "wheel", "setuptools-rust"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin==1.14.1"]
+build-backend = "maturin"
 
 [project]
 name = "Elo-MMR-Py"
-version = "1.0.3"
+dynamic = ["version"]
+description = "Fast Python bindings for Elo-MMR multiplayer rating systems"
 readme = "README.md"
-description = "Python bindings for Elo-MRR"
-authors = [{name = "Aleksey Ropan"}]
-license = {file = "LICENSE"}
-keywords = ['rating', 'competition', 'skill', 'mmr', 'elo', 'trueskill', 'endure', 'glicko', 'python', 'rust']
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Aleksey Ropan" }]
+keywords = [
+  "rating",
+  "competition",
+  "skill",
+  "mmr",
+  "elo",
+  "trueskill",
+  "glicko",
+  "python",
+  "rust",
+]
 classifiers = [
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Rust",
   "Topic :: Games/Entertainment",
+  "Topic :: Scientific/Engineering :: Mathematics",
   "Topic :: Software Development :: Libraries :: Python Modules",
-  "Topic :: Utilities"
 ]
 
 [project.urls]
+Documentation = "https://aropan.github.io/Elo-MMR-Py/"
 Discussion = "https://github.com/aropan/Elo-MMR-Py/discussions"
 Issues = "https://github.com/aropan/Elo-MMR-Py/issues"
 Repository = "https://github.com/aropan/Elo-MMR-Py"
 
-[[tool.setuptools-rust.ext-modules]]
-target = "elo_mmr_py.elo_mmr_python_bindings"
+[dependency-groups]
+dev = [
+  # mypy is retained only for mypy.stubtest's native runtime/stub parity check.
+  "mypy>=1.15,<2",
+  "pytest>=8.3,<10",
+  "pytest-cov>=6,<8",
+  "ruff>=0.11,<1",
+  "ty==0.0.74",
+]
+docs = [
+  "mkdocs>=1.6,<2",
+  "mkdocs-material>=9.6,<10",
+  "mkdocstrings[python]>=0.29,<1",
+]
 
-[tool.cibuildwheel]
-skip = "*musllinux* pp* cp27-* cp35-* cp36-* cp37-* cp38-*"
-build-verbosity = 1
-environment = { VERBOSE = "1" }
-test-requires = "pytest"
-test-command = "pytest {project}/tests -s -v"
+[tool.maturin]
+bindings = "pyo3"
+module-name = "elo_mmr_py.elo_mmr_python_bindings"
+python-source = "src"
+profile = "release"
+editable-profile = "release"
+strip = true
+locked = true
+include = [
+  { path = ".cargo/audit.toml", format = "sdist" },
+  { path = ".cargo/audit-version", format = "sdist" },
+  { path = ".cargo/llvm-cov-version", format = "sdist" },
+  { path = "CHANGELOG.md", format = "sdist" },
+  { path = "CONTRIBUTING.md", format = "sdist" },
+  { path = "benchmarks/**", format = "sdist" },
+  { path = "docs/**", format = "sdist" },
+  { path = "examples/**", format = "sdist" },
+  { path = "mkdocs.yml", format = "sdist" },
+  { path = "rust-toolchain.toml", format = "sdist" },
+  { path = "scripts/**", format = "sdist" },
+  { path = "tests/**", format = "sdist" },
+  { path = "uv.lock", format = "sdist" },
+]
 
-[tool.cibuildwheel.linux]
-environment = 'PATH="$HOME/.cargo/bin:$PATH"'
-before-build = "yum install -y openssl-devel && curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y && rustup show"
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+  "performance: deterministic performance and GIL checks",
+]
 
-[tool.cibuildwheel.macos]
-archs = 'x86_64 arm64'
-environment = 'PATH="$HOME/.cargo/bin:$PATH"'
-before-build = "rustup default stable && rustup show"
+[tool.coverage.run]
+branch = true
+source = ["elo_mmr_py"]
 
-[[tool.cibuildwheel.overrides]]
-select = "*macos*x86_64*"
-before-build = "rustup target add --toolchain stable x86_64-apple-darwin && rustup default stable-x86_64-apple-darwin && rustup show"
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+skip_covered = true
 
-[[tool.cibuildwheel.overrides]]
-select = "*macos*arm64*"
-before-build = "rustup target add --toolchain stable aarch64-apple-darwin && rustup default stable-aarch64-apple-darwin && rustup show"
+[tool.uv]
+required-version = "==0.11.15"
+cache-keys = [
+  { file = "pyproject.toml" },
+  { file = "Cargo.toml" },
+  { file = "Cargo.lock" },
+  { file = "rust-toolchain.toml" },
+  { file = "src/**/*.rs" },
+]
 
-[tool.cibuildwheel.windows]
-environment = 'PATH="$UserProfile\.cargo\bin;$PATH"'
+[tool.ty.environment]
+python-version = "3.11"
 
-[[tool.cibuildwheel.overrides]]
-select = "*win32*"
-before-build = "rustup toolchain install stable-i686-pc-windows-msvc && rustup default stable-i686-pc-windows-msvc && rustup override set stable-i686-pc-windows-msvc && rustup show"
+[tool.ty.src]
+include = ["src", "tests", "benchmarks", "examples", "scripts"]
 
-[[tool.cibuildwheel.overrides]]
-select = "*win_amd64*"
-before-build = "rustup toolchain install stable-x86_64-pc-windows-msvc && rustup default stable-x86_64-pc-windows-msvc && rustup override set stable-x86_64-pc-windows-msvc && rustup show"
+[tool.ty.rules]
+all = "error"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
+
+[tool.ruff.format]
+quote-style = "single"

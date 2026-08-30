@@ -1,0 +1,43 @@
+name: CPython prerelease
+
+on:
+  schedule:
+    - cron: '17 4 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cpython-prerelease-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cpython-315:
+    name: Standard CPython 3.15 prerelease
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: 3.15-dev
+          allow-prereleases: true
+          check-latest: true
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - name: Set reproducible build timestamp
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" >> "$GITHUB_ENV"
+      - name: Install locked test dependencies
+        run: uv sync --only-group dev --locked
+      - name: Build ABI3 wheel with CPython 3.15
+        run: uv build --wheel --out-dir dist
+      - name: Install the built wheel
+        run: uv pip install --python .venv/bin/python --reinstall --no-deps dist/*.whl
+      - name: Run tests on CPython 3.15
+        run: .venv/bin/python -m pytest -q
