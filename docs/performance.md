@@ -72,10 +72,10 @@ memory and was about 9% faster than `rate()` in exact mode. The opt-in fast mode
 was about 5.7 times faster with `rate()` and 5.8 times faster with
 `rate_latest()` in this particular dataset.
 
-The weekly and manually dispatched Performance workflow runs a shorter release
-build matrix and uploads its JSON report. Rating wall-time and checkpoint read
-time remain informational because hosted-runner speed is not stable enough for
-a universal hard gate; only the coarse write-throughput floor above is enforced.
+The manually dispatched Performance workflow runs a shorter release build
+matrix and uploads its JSON report. Rating wall-time and checkpoint read time
+remain informational because hosted-runner speed is not stable enough for a
+universal hard gate; only the coarse write-throughput floor above is enforced.
 
 ## Checkpoint reference (2026-08-26)
 

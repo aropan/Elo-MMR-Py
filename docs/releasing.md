@@ -33,6 +33,6 @@ wheels plus one source distribution, installs and tests each artifact on its
 native runner, and publishes only after every build passes. The PyPI job
 authenticates with GitHub OIDC.
 
-CPython 3.11–3.14 wheel compatibility is part of regular CI. A scheduled workflow
-checks the latest CPython 3.15 prerelease separately so prerelease availability
-cannot block ordinary changes.
+CPython 3.11–3.14 wheel compatibility is part of regular CI. Run the
+`CPython prerelease` workflow manually when checking the latest CPython 3.15
+prerelease so prerelease availability cannot block ordinary changes.

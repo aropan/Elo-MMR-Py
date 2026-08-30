@@ -17,7 +17,7 @@ All notable changes to this project are documented here. The format follows
   indices, and compatibility validation.
 - Typed native stubs, `py.typed`, explicit exports, and package `__version__`.
 - Deterministic performance benchmarks, MkDocs documentation, expanded tests,
-  weekly performance reports, separate Rust coverage, and complete CI, wheel,
+  on-demand performance reports, separate Rust coverage, and complete CI, wheel,
   source-distribution, documentation, and release flows.
 
 ### Changed
