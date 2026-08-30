@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-30
+
 ### Added
 
 - `rate_latest()` and immutable `PlayerRating` values for `O(players)` Python
@@ -82,5 +84,6 @@ All notable changes to this project are documented here. The format follows
 
 - Last release from the setuptools-rust/cibuildwheel packaging line.
 
-[Unreleased]: https://github.com/aropan/Elo-MMR-Py/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/aropan/Elo-MMR-Py/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/aropan/Elo-MMR-Py/compare/v1.0.3...v2.0.0
 [1.0.3]: https://github.com/aropan/Elo-MMR-Py/releases/tag/v1.0.3
