@@ -69,6 +69,8 @@ All notable changes to this project are documented here. The format follows
 - Checkpoint JSON parsing preserves every finite `f64` bit, so save/load cycles
   do not introduce one-ULP posterior drift. `PlayerRating` equality now includes
   `mu`, `sig`, and `update_time_seconds` instead of hiding state differences.
+- Manylinux wheel builds install the OpenSSL headers required by the pinned
+  upstream dependency tree.
 
 ### Removed
 

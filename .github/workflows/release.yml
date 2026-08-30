@@ -147,6 +147,7 @@ jobs:
           rust-toolchain: ${{ steps.build-tools.outputs.rust_toolchain }}
           target: ${{ matrix.target }}
           manylinux: ${{ matrix.manylinux }}
+          before-script-linux: bash scripts/install_manylinux_build_dependencies.sh
           args: --release --locked --compatibility pypi --out dist
       - name: Install only the built wheel
         run: |
