@@ -15,11 +15,15 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Validate restored checkpoint history once when constructing the rating state.
 - Test ABI3 wheels on CPython 3.11–3.15; move the optional forward-compatibility
   check to CPython 3.16 using a wheel built on stable Python.
 - Refresh stable build and development tooling, compatible locked dependencies,
   and pinned GitHub Actions. Use Rust 1.99.1, PyO3 0.30.1, Maturin 1.16.0,
   uv 0.13.7, and cargo-llvm-cov 0.9.1.
+- `Rater.load()` deserializes complete V2 checkpoints through a bounded input
+  buffer, avoiding an additional file-sized heap allocation. Native history,
+  numerical state, checkpoint format and read-error classification are preserved.
 
 ### Security
 

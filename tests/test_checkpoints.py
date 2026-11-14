@@ -246,6 +246,29 @@ def test_rater_load_rejects_unsupported_v2_version(tmp_path: Path) -> None:
         Rater.load(checkpoint)
 
 
+@pytest.mark.parametrize('corruption', ['truncated', 'trailing_json', 'invalid_utf8'])
+def test_rater_load_rejects_corrupt_checkpoint(tmp_path: Path, corruption: str) -> None:
+    checkpoint = tmp_path / 'broken.json'
+    Rater().save(checkpoint)
+    contents = checkpoint.read_bytes()
+    if corruption == 'truncated':
+        contents = contents[:-2]
+    elif corruption == 'trailing_json':
+        contents += b'{}'
+    else:
+        contents = contents.replace(b'"mmr"', b'"\xff"')
+    checkpoint.write_bytes(contents)
+
+    with pytest.raises(ValueError, match='v2 schema'):
+        Rater.load(checkpoint)
+
+
+@pytest.mark.parametrize('target', ['missing.json', '.'])
+def test_rater_load_io_errors_are_os_errors(tmp_path: Path, target: str) -> None:
+    with pytest.raises(OSError, match='failed to read checkpoint'):
+        Rater.load(tmp_path / target)
+
+
 def test_checkpoint_enforces_chronology_between_batches(tmp_path: Path) -> None:
     checkpoint = tmp_path / 'ratings.json'
     rate(two_contests()[:1], save_checkpoint=checkpoint)
@@ -346,6 +369,8 @@ def test_v2_checkpoint_rejects_invalid_player_state(
 
     with pytest.raises(ValueError, match=message):
         rate([], load_checkpoint=checkpoint)
+    with pytest.raises(ValueError, match=message):
+        Rater.load(checkpoint)
 
 
 @pytest.mark.parametrize(

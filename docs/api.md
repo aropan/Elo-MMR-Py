@@ -22,6 +22,13 @@ duplicates collapse to one result, and an empty sequence returns `{}`. Pass a
 sequence of strings, such as a list or tuple, rather than a single string.
 Reading a snapshot does not update ratings or checkpoint state.
 
+`Rater.load()` reads a complete V2 checkpoint through a 64 KiB input buffer.
+Native player/history state still occupies memory; the loader avoids retaining
+an additional byte buffer equal to the serialized file size. The stateless
+legacy-compatible loader retains its existing implementation. Buffered parsing
+can be slower than parsing an in-memory file, so benchmark restore time and peak
+process memory with representative checkpoints.
+
 The complete executable example is included from its tested source file:
 
 <!-- fmt: off -->

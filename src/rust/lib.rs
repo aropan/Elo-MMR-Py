@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::io::{BufWriter, Write};
+use std::io::{BufReader, BufWriter, Read, Write};
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -780,6 +780,7 @@ struct CheckpointV2<P> {
     players: P,
 }
 
+/// Deserialized state, validated once by `RaterState::from_loaded`.
 struct LoadedState {
     players: PlayersByName,
     contests_processed: usize,
@@ -911,11 +912,6 @@ fn load_checkpoint(
                     checkpoint.mu_noob, checkpoint.sig_noob
                 )));
             }
-            validate_checkpoint_state(
-                &checkpoint.players,
-                checkpoint.contests_processed,
-                checkpoint.last_time_seconds,
-            )?;
             Ok(LoadedState {
                 players: checkpoint.players,
                 contests_processed: checkpoint.contests_processed,
@@ -932,7 +928,6 @@ fn load_checkpoint(
                     ))
                 })?;
             let (contests_processed, last_time_seconds) = infer_legacy_metadata(&players);
-            validate_checkpoint_state(&players, contests_processed, last_time_seconds)?;
             Ok(LoadedState {
                 players,
                 contests_processed,
@@ -942,20 +937,37 @@ fn load_checkpoint(
     }
 }
 
+fn read_v2_checkpoint<R: Read>(
+    reader: R,
+    path: &Path,
+) -> Result<CheckpointV2<PlayersByName>, BindingError> {
+    let reader = BufReader::with_capacity(CHECKPOINT_BUFFER_CAPACITY, reader);
+    serde_json::from_reader(reader).map_err(|error| {
+        if error.is_io() {
+            BindingError::Io(
+                format!("failed to read checkpoint {}", path.display()),
+                std::io::Error::new(
+                    error.io_error_kind().unwrap_or(std::io::ErrorKind::Other),
+                    error.to_string(),
+                ),
+            )
+        } else {
+            BindingError::Invalid(format!(
+                "checkpoint {} does not match the v2 schema: {error}",
+                path.display()
+            ))
+        }
+    })
+}
+
 fn load_v2_checkpoint(path: &Path) -> Result<(SystemSpec, f64, f64, LoadedState), BindingError> {
-    let contents = std::fs::read(path).map_err(|error| {
+    let file = std::fs::File::open(path).map_err(|error| {
         BindingError::Io(
             format!("failed to read checkpoint {}", path.display()),
             error,
         )
     })?;
-    let checkpoint: CheckpointV2<PlayersByName> =
-        serde_json::from_slice(&contents).map_err(|error| {
-            BindingError::Invalid(format!(
-                "checkpoint {} does not match the v2 schema: {error}",
-                path.display()
-            ))
-        })?;
+    let checkpoint = read_v2_checkpoint(file, path)?;
     if checkpoint.format_version != CHECKPOINT_FORMAT_VERSION {
         return Err(BindingError::Invalid(format!(
             "unsupported checkpoint format version {}; expected {CHECKPOINT_FORMAT_VERSION}",
@@ -963,12 +975,6 @@ fn load_v2_checkpoint(path: &Path) -> Result<(SystemSpec, f64, f64, LoadedState)
         )));
     }
     let system = SystemSpec::from_parts(checkpoint.system, checkpoint.system_config)?;
-    validate_options(&system, checkpoint.mu_noob, checkpoint.sig_noob)?;
-    validate_checkpoint_state(
-        &checkpoint.players,
-        checkpoint.contests_processed,
-        checkpoint.last_time_seconds,
-    )?;
     Ok((
         system,
         checkpoint.mu_noob,
@@ -1534,6 +1540,47 @@ fn elo_mmr_python_bindings(module: &Bound<'_, PyModule>) -> PyResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn v2_checkpoint_reader_uses_bounded_reads() {
+        struct BoundedReader(std::io::Cursor<Vec<u8>>);
+        impl Read for BoundedReader {
+            fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+                assert!(buffer.len() <= CHECKPOINT_BUFFER_CAPACITY);
+                self.0.read(buffer)
+            }
+        }
+        let mut data = vec![b' '; CHECKPOINT_BUFFER_CAPACITY * 2 + 17];
+        data.extend_from_slice(
+            br#"{"format_version":2,"package_version":"2.0.0",
+            "system":"mmr","system_config":null,"mu_noob":1500.0,"sig_noob":350.0,
+            "contests_processed":0,"last_time_seconds":null,"players":{}}"#,
+        );
+        let checkpoint = read_v2_checkpoint(
+            BoundedReader(std::io::Cursor::new(data)),
+            Path::new("bounded.json"),
+        )
+        .unwrap();
+        assert!(checkpoint.players.is_empty());
+        assert_eq!(checkpoint.format_version, CHECKPOINT_FORMAT_VERSION);
+    }
+
+    #[test]
+    fn v2_checkpoint_reader_preserves_io_errors() {
+        struct BrokenReader;
+        impl Read for BrokenReader {
+            fn read(&mut self, _buffer: &mut [u8]) -> std::io::Result<usize> {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::PermissionDenied,
+                    "test read failure",
+                ))
+            }
+        }
+        assert!(matches!(
+            read_v2_checkpoint(BrokenReader, Path::new("unreadable.json")),
+            Err(BindingError::Io(_, error)) if error.kind() == std::io::ErrorKind::PermissionDenied
+        ));
+    }
 
     #[test]
     fn validates_contiguous_ties() {

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -188,3 +189,27 @@ def test_selected_snapshot_rejects_poisoned_rater() -> None:
         rater.add(Contest([('alice', 0, 0), ('bob', 1, 1)], time_seconds=1))
     with pytest.raises(RuntimeError, match='unavailable'):
         rater.ratings_for(['alice'])
+
+
+def test_buffered_restore_retains_exact_state_and_continuation(tmp_path: Path) -> None:
+    contests = [
+        Contest([('участник-α', 0, 0), ('participant-β', 1, 1)], time_seconds=10),
+        Contest([('participant-β', 0, 0), ('участник-α', 1, 1)], time_seconds=20),
+    ]
+    direct = Rater()
+    direct.add(contests[0])
+    checkpoint = tmp_path / 'buffered.json'
+    direct.save(checkpoint)
+    original = json.loads(checkpoint.read_bytes())
+    checkpoint.write_bytes(b' ' * (128 * 1024 + 17) + checkpoint.read_bytes())
+    restored = Rater.load(checkpoint)
+    restored.save(tmp_path / 'restored.json')
+    assert json.loads((tmp_path / 'restored.json').read_bytes()) == original
+    direct.add(contests[1])
+    restored.add(contests[1])
+    assert restored.ratings == direct.ratings
+    direct.save(tmp_path / 'direct-final.json')
+    restored.save(tmp_path / 'restored-final.json')
+    assert json.loads((tmp_path / 'direct-final.json').read_bytes()) == json.loads(
+        (tmp_path / 'restored-final.json').read_bytes()
+    )
