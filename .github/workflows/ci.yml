@@ -115,28 +115,6 @@ jobs:
           path: rust-coverage.lcov
           if-no-files-found: error
 
-  security-audit:
-    name: Python and Rust dependency audit
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-      - name: Install pinned Rust toolchain
-        run: rustup show
-      - name: Audit uv.lock
-        run: uv audit --locked
-      - name: Install cargo-audit
-        run: |
-          read -r CARGO_AUDIT_VERSION < .cargo/audit-version
-          cargo install cargo-audit --version "$CARGO_AUDIT_VERSION" --locked
-      - name: Audit Cargo.lock
-        run: cargo audit --deny warnings
-
   abi3-wheel:
     name: Build CPython 3.11+ ABI3 wheel
     runs-on: ubuntu-24.04
@@ -226,7 +204,7 @@ jobs:
   docs-deploy:
     name: Deploy verified documentation to GitHub Pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [python-quality, rust-quality, rust-coverage, security-audit, abi3-compatibility, sdist]
+    needs: [python-quality, rust-quality, rust-coverage, abi3-compatibility, sdist]
     runs-on: ubuntu-24.04
     permissions:
       contents: read

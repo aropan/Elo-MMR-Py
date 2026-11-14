@@ -51,10 +51,10 @@ Artifact tests read their pytest version from `uv.lock` through
 `scripts/build_tool_versions.py`, so wheel and source-distribution checks use
 the same release as the development environment.
 
-Prefer stable dependency releases that are at least seven days old, matching
-the Dependabot cooldown. Security fixes can require an earlier update. Run the
-relevant checks before accepting an update, including installed-wheel tests
-when changing PyO3, Maturin, or the supported Python versions.
+Prefer stable dependency releases that are at least seven days old. Security
+fixes can require an earlier update. Run the relevant checks before accepting
+an update, including installed-wheel tests when changing PyO3, Maturin, or the
+supported Python versions.
 
 `.cargo/audit.toml` keeps vulnerabilities and new RustSec warnings blocking. A
 specific advisory may be ignored only when its transitive path, runtime
