@@ -15,6 +15,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Share immutable native contest data across rating calls instead of copying
+  standings on every call, and prepare native result snapshots while detached
+  from the Python interpreter.
 - Validate restored checkpoint history once when constructing the rating state.
 - Test ABI3 wheels on CPython 3.11–3.15; move the optional forward-compatibility
   check to CPython 3.16 using a wheel built on stable Python.

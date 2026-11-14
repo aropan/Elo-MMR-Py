@@ -4,7 +4,7 @@ use std::io::{BufReader, BufWriter, Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use multi_skill::data_processing::{Contest, ContestRatingParams};
@@ -493,11 +493,12 @@ fn validate_options(system: &SystemSpec, mu_noob: f64, sig_noob: f64) -> Result<
 }
 
 fn validate_chronology(
-    contests: &[Contest],
+    contests: &[impl std::borrow::Borrow<Contest>],
     previous_time: Option<u64>,
 ) -> Result<(), BindingError> {
     let mut last_time = previous_time;
     for (index, contest) in contests.iter().enumerate() {
+        let contest = contest.borrow();
         match last_time {
             Some(previous) if contest.time_seconds < previous => {
                 return Err(BindingError::Invalid(format!(
@@ -525,7 +526,8 @@ fn validate_chronology(
 )]
 #[derive(Clone)]
 struct PyContest {
-    inner: Contest,
+    // Python argument extraction clones the handle, not the participant data.
+    inner: Arc<Contest>,
 }
 
 #[pymethods]
@@ -587,7 +589,7 @@ impl PyContest {
         }
         validate_standings(&standings)?;
         Ok(Self {
-            inner: Contest {
+            inner: Arc::new(Contest {
                 name: name.unwrap_or_default(),
                 url,
                 rating_params: ContestRatingParams {
@@ -596,7 +598,7 @@ impl PyContest {
                 },
                 time_seconds,
                 standings,
-            },
+            }),
         })
     }
 
@@ -1144,7 +1146,10 @@ impl RaterState {
         })
     }
 
-    fn extend(&mut self, contests: &[Contest]) -> Result<f64, BindingError> {
+    fn extend(
+        &mut self,
+        contests: &[impl std::borrow::Borrow<Contest>],
+    ) -> Result<f64, BindingError> {
         validate_chronology(contests, self.last_time_seconds)?;
         let new_count = self
             .contests_processed
@@ -1155,7 +1160,7 @@ impl RaterState {
         for (offset, contest) in contests.iter().enumerate() {
             simulate_contest(
                 &mut self.players,
-                contest,
+                contest.borrow(),
                 self.system.as_ref(),
                 self.mu_noob,
                 self.sig_noob,
@@ -1165,7 +1170,7 @@ impl RaterState {
         let secs_elapsed = started.elapsed().as_secs_f64();
         self.contests_processed = new_count;
         if let Some(contest) = contests.last() {
-            self.last_time_seconds = Some(contest.time_seconds);
+            self.last_time_seconds = Some(contest.borrow().time_seconds);
         }
         Ok(secs_elapsed)
     }
@@ -1192,7 +1197,7 @@ struct RunResults {
 
 fn run_rating_inner(
     system: SystemSpec,
-    contests: Vec<Contest>,
+    contests: Vec<Arc<Contest>>,
     mu_noob: f64,
     sig_noob: f64,
     load_path: Option<PathBuf>,
@@ -1218,7 +1223,7 @@ fn run_rating_inner(
 
 fn run_rating(
     system: SystemSpec,
-    contests: Vec<Contest>,
+    contests: Vec<Arc<Contest>>,
     mu_noob: f64,
     sig_noob: f64,
     load_path: Option<PathBuf>,
@@ -1316,7 +1321,7 @@ fn rate(
     save_checkpoint: Option<String>,
 ) -> PyResult<PyRateResult> {
     let contests = contests.into_iter().map(|contest| contest.inner).collect();
-    let results = py.detach(move || {
+    py.detach(move || {
         run_rating(
             system,
             contests,
@@ -1325,8 +1330,9 @@ fn rate(
             load_checkpoint.map(PathBuf::from),
             save_checkpoint.map(PathBuf::from),
         )
-    })?;
-    Ok(full_result(results))
+        .map(full_result)
+    })
+    .map_err(Into::into)
 }
 
 /// Rate contests and return only the latest state for each participant.
@@ -1349,7 +1355,7 @@ fn rate_latest(
     save_checkpoint: Option<String>,
 ) -> PyResult<HashMap<String, PyPlayerRating>> {
     let contests = contests.into_iter().map(|contest| contest.inner).collect();
-    let results = py.detach(move || {
+    py.detach(move || {
         run_rating(
             system,
             contests,
@@ -1358,8 +1364,9 @@ fn rate_latest(
             load_checkpoint.map(PathBuf::from),
             save_checkpoint.map(PathBuf::from),
         )
-    })?;
-    Ok(latest_result(results))
+        .map(latest_result)
+    })
+    .map_err(Into::into)
 }
 
 /// Rust-owned incremental rating state.
@@ -1426,7 +1433,8 @@ impl PyRater {
     }
 
     fn extend(&self, py: Python<'_>, contests: Vec<PyContest>) -> PyResult<()> {
-        let contests: Vec<Contest> = contests.into_iter().map(|contest| contest.inner).collect();
+        let contests: Vec<Arc<Contest>> =
+            contests.into_iter().map(|contest| contest.inner).collect();
         py.detach(move || self.with_state(|state| state.extend(&contests).map(|_| ())))?;
         Ok(())
     }

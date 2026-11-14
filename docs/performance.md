@@ -9,7 +9,11 @@ Other Python threads can run while Elo-MMR computes.
 There is no JSON or whole-input string bridge. Constructing `Contest` converts
 the Python standings tuples directly into the native Rust `Contest`; rating
 calls receive those PyO3 objects and move owned Rust values into the detached
-calculation. JSON serialization is used only for checkpoint files.
+calculation. Calls share the immutable native contest data, so reusing a
+`Contest` or passing a batch does not copy its participant names and standings
+again. Preparing the native results also runs detached; creating the returned
+Python objects still requires the interpreter. JSON serialization is used only
+for checkpoint files.
 
 The two stateless APIs run the same rating algorithm:
 

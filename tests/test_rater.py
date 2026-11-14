@@ -125,6 +125,25 @@ def test_non_elo_rater_has_no_system_config() -> None:
     assert rater.ratings == {}
 
 
+def test_contest_data_is_immutable_and_reusable_across_raters() -> None:
+    standings = [('alice', 0, 0), ('bob', 1, 1)]
+    contest = Contest(standings, time_seconds=10)
+    standings.clear()
+    exported = contest.standings
+    exported.clear()
+    contests = [contest, contest]
+    first, second = Rater(), Rater()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        updates = [executor.submit(rater.extend, contests) for rater in (first, second)]
+        for update in updates:
+            update.result(timeout=30)
+
+    assert first.ratings == second.ratings == rate_latest(contests)
+    assert first.ratings['alice'].contests_played == 2
+    assert contest.standings == [('alice', 0, 0), ('bob', 1, 1)]
+
+
 @pytest.mark.parametrize('system', SUPPORTED_SYSTEMS)
 @pytest.mark.parametrize(
     'names',
