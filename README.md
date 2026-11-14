@@ -23,6 +23,7 @@ python -m pip install Elo-MMR-Py
 Binary ABI3 wheels support standard CPython 3.11 and newer on Linux x86_64 and
 aarch64, macOS x86_64 and arm64, and Windows x86_64. PyPy, free-threaded CPython,
 and 32-bit platforms do not have prebuilt wheels.
+CI tests the same ABI3 wheel on each stable CPython release from 3.11 to 3.15.
 
 ## Quickstart
 

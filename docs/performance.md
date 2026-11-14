@@ -21,6 +21,15 @@ to `O(players)`. It is the preferred service and leaderboard API.
 `Rater` additionally retains state in Rust, so repeated updates do not parse a
 checkpoint or replay old contests.
 
+PyO3 0.30 adds garbage-collector tracking to native Python objects to fix a
+possible type-reference leak. This increases the cost of exporting a complete
+history. On 64-bit Linux with CPython 3.14.7, upgrading from PyO3 0.29.2 to
+0.30.1 increased `rate()` Python peak memory from 5.62 to 7.14 MiB for 1,000
+players × 100 contests; `rate_latest()` changed from 0.15 to 0.17 MiB. Export
+time can also increase, especially with `mmr-fast`, where calculation takes a
+smaller share of the total time. The historical reference runs below predate
+this correctness fix.
+
 ## Reproducible benchmark
 
 The repository benchmark creates deterministic histories for 100, 500, and

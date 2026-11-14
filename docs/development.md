@@ -47,6 +47,15 @@ across Python sources, tests, benchmarks, and examples. `mypy` is installed only
 for `mypy.stubtest`, which imports the native extension and verifies that its
 runtime API matches the shipped `.pyi` declarations.
 
+Artifact tests read their pytest version from `uv.lock` through
+`scripts/build_tool_versions.py`, so wheel and source-distribution checks use
+the same release as the development environment.
+
+Prefer stable dependency releases that are at least seven days old, matching
+the Dependabot cooldown. Security fixes can require an earlier update. Run the
+relevant checks before accepting an update, including installed-wheel tests
+when changing PyO3, Maturin, or the supported Python versions.
+
 `.cargo/audit.toml` keeps vulnerabilities and new RustSec warnings blocking. A
 specific advisory may be ignored only when its transitive path, runtime
 relevance, accepted risk, and the lack of an upstream removal mechanism are
@@ -60,6 +69,11 @@ arbitrary first-release percentage gate.
 Documentation examples are the real files in `examples/` and are executed by
 pytest. On pushes to `main`, the same strict documentation artifact
 is deployed only after all other CI jobs succeed.
+
+[Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) reaches end
+of support on May 5, 2027. Plan the documentation migration before that date;
+compare API rendering, navigation, and search with the existing strict build
+before replacing the documentation toolchain.
 
 ## Benchmarking
 

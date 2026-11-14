@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin==1.14.1"]
+requires = ["maturin==1.16.0"]
 build-backend = "maturin"
 
 [project]
@@ -32,6 +32,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Rust",
   "Topic :: Games/Entertainment",
@@ -48,16 +49,16 @@ Repository = "https://github.com/aropan/Elo-MMR-Py"
 [dependency-groups]
 dev = [
   # mypy is retained only for mypy.stubtest's native runtime/stub parity check.
-  "mypy>=1.15,<2",
-  "pytest>=8.3,<10",
-  "pytest-cov>=6,<8",
-  "ruff>=0.11,<1",
-  "ty==0.0.74",
+  "mypy>=2.4.1,<3",
+  "pytest>=9.2,<10",
+  "pytest-cov>=7.1,<8",
+  "ruff>=0.17.3,<1",
+  "ty==0.0.96",
 ]
 docs = [
-  "mkdocs>=1.6,<2",
-  "mkdocs-material>=9.6,<10",
-  "mkdocstrings[python]>=0.29,<1",
+  "mkdocs>=1.6.1,<2",
+  "mkdocs-material>=9.8,<10",
+  "mkdocstrings[python]>=1.0.8,<2",
 ]
 
 [tool.maturin]
@@ -102,7 +103,7 @@ show_missing = true
 skip_covered = true
 
 [tool.uv]
-required-version = "==0.11.15"
+required-version = "==0.13.7"
 cache-keys = [
   { file = "pyproject.toml" },
   { file = "Cargo.toml" },

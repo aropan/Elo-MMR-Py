@@ -1,4 +1,4 @@
-"""Expose canonical build-tool pins as GitHub Actions outputs."""
+"""Expose canonical build and artifact-test tool pins as GitHub Actions outputs."""
 
 from __future__ import annotations
 
@@ -34,10 +34,19 @@ def rust_toolchain_version(toolchain_path: Path) -> str:
     return channel
 
 
+def locked_pytest_version(lock_path: Path) -> str:
+    packages = tomllib.loads(lock_path.read_text(encoding='utf-8'))['package']
+    versions = [package.get('version') for package in packages if package['name'] == 'pytest']
+    if len(versions) != 1 or not isinstance(versions[0], str) or not versions[0]:
+        raise ValueError('uv.lock must contain exactly one pytest version')
+    return versions[0]
+
+
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
     print(f'maturin_version=v{exact_maturin_version(root / "pyproject.toml")}')
     print(f'rust_toolchain={rust_toolchain_version(root / "rust-toolchain.toml")}')
+    print(f'pytest_version={locked_pytest_version(root / "uv.lock")}')
 
 
 if __name__ == '__main__':

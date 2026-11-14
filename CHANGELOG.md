@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Test ABI3 wheels on CPython 3.11–3.15; move the optional forward-compatibility
+  check to CPython 3.16 using a wheel built on stable Python.
+- Refresh stable build and development tooling, compatible locked dependencies,
+  and pinned GitHub Actions. Use Rust 1.99.1, PyO3 0.30.1, Maturin 1.16.0,
+  uv 0.13.7, and cargo-llvm-cov 0.9.1.
+
+### Security
+
+- Update locked `rustls`, `rustls-webpki`, `rustix`, and `tokio` to patched
+  releases, together with `certifi` and `urllib3` in the documentation
+  environment, to resolve the outstanding dependency advisories.
+
 ## [2.0.0] - 2026-08-30
 
 ### Added
