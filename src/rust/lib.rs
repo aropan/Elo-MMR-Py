@@ -9,8 +9,8 @@ use std::time::Instant;
 
 use multi_skill::data_processing::{Contest, ContestRatingParams};
 use multi_skill::systems::{
-    EloMMR, EloMMRVariant, PlayerEvent, PlayersByName, RatingSystem, get_rating_system_by_name,
-    simulate_contest,
+    EloMMR, EloMMRVariant, Player, PlayerEvent, PlayersByName, RatingSystem,
+    get_rating_system_by_name, simulate_contest,
 };
 use pyo3::exceptions::{PyOSError, PyOverflowError, PyRuntimeError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
@@ -1250,25 +1250,38 @@ fn full_result(results: RunResults) -> PyRateResult {
     }
 }
 
+fn latest_player_rating(name: &str, player: &Player) -> PyPlayerRating {
+    let rating = player.event_history.last().map_or_else(
+        || player.approx_posterior.mu.round() as i32,
+        |event| event.rating_mu,
+    );
+    PyPlayerRating {
+        name: name.to_owned(),
+        rating,
+        rating_sig: player.approx_posterior.sig.round() as i32,
+        contests_played: player.event_history.len(),
+        mu: player.approx_posterior.mu,
+        sig: player.approx_posterior.sig,
+        update_time_seconds: player.update_time,
+    }
+}
+
 fn latest_snapshot(players: &PlayersByName) -> HashMap<String, PyPlayerRating> {
     players
         .iter()
-        .map(|(name, player)| {
-            let player = player.borrow();
-            let rating = player.event_history.last().map_or_else(
-                || player.approx_posterior.mu.round() as i32,
-                |event| event.rating_mu,
-            );
-            let value = PyPlayerRating {
-                name: name.clone(),
-                rating,
-                rating_sig: player.approx_posterior.sig.round() as i32,
-                contests_played: player.event_history.len(),
-                mu: player.approx_posterior.mu,
-                sig: player.approx_posterior.sig,
-                update_time_seconds: player.update_time,
-            };
-            (name.clone(), value)
+        .map(|(name, player)| (name.clone(), latest_player_rating(name, &player.borrow())))
+        .collect()
+}
+
+fn latest_snapshot_for<'a>(
+    players: &PlayersByName,
+    names: impl IntoIterator<Item = &'a String>,
+) -> HashMap<String, PyPlayerRating> {
+    names
+        .into_iter()
+        .filter_map(|name| {
+            let player = players.get(name)?.borrow();
+            Some((name.clone(), latest_player_rating(name, &player)))
         })
         .collect()
 }
@@ -1418,6 +1431,15 @@ impl PyRater {
             .map_err(Into::into)
     }
 
+    fn ratings_for(
+        &self,
+        py: Python<'_>,
+        names: Vec<String>,
+    ) -> PyResult<HashMap<String, PyPlayerRating>> {
+        py.detach(move || self.with_state(|state| Ok(latest_snapshot_for(&state.players, &names))))
+            .map_err(Into::into)
+    }
+
     fn save(&self, py: Python<'_>, path: String) -> PyResult<()> {
         py.detach(move || {
             self.with_state(|state| save_checkpoint(Path::new(&path), &state.checkpoint()))
@@ -1533,6 +1555,38 @@ mod tests {
     fn rejects_inconsistent_ties() {
         let standings = vec![("a".to_owned(), 0, 1), ("b".to_owned(), 1, 1)];
         assert!(validate_standings(&standings).is_err());
+    }
+
+    #[test]
+    fn selected_snapshot_does_not_borrow_unrequested_players() {
+        let mut state = RaterState::new(
+            SystemSpec::from_name("mmr".to_owned()).unwrap(),
+            1500.0,
+            350.0,
+        )
+        .unwrap();
+        state
+            .extend(&[Contest {
+                name: String::new(),
+                url: None,
+                rating_params: ContestRatingParams::default(),
+                time_seconds: 1,
+                standings: vec![("selected".to_owned(), 0, 0), ("idle".to_owned(), 1, 1)],
+            }])
+            .unwrap();
+        let expected = latest_snapshot(&state.players);
+        // A whole-population export would panic while borrowing this player.
+        let _unrelated = state.players["idle"].borrow_mut();
+        let names = vec![
+            "selected".to_owned(),
+            "missing".to_owned(),
+            "selected".to_owned(),
+        ];
+        let selected = latest_snapshot_for(&state.players, &names);
+
+        assert_eq!(selected.len(), 1);
+        assert!(selected["selected"] == expected["selected"]);
+        assert!(latest_snapshot_for(&state.players, &Vec::new()).is_empty());
     }
 
     struct FailingWriter;

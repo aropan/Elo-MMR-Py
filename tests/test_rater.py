@@ -3,10 +3,19 @@ from __future__ import annotations
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
-from elo_mmr_py import Contest, EloMmrConfig, Rater, rate, rate_latest
+from elo_mmr_py import (
+    SUPPORTED_SYSTEMS,
+    Contest,
+    EloMmrConfig,
+    Rater,
+    RatingSystemName,
+    rate,
+    rate_latest,
+)
 
 
 def test_rater_add_and_extend_match_stateless_apis(example_contests: list[Contest]) -> None:
@@ -113,3 +122,69 @@ def test_non_elo_rater_has_no_system_config() -> None:
 
     assert rater.system_config is None
     assert rater.ratings == {}
+
+
+@pytest.mark.parametrize('system', SUPPORTED_SYSTEMS)
+@pytest.mark.parametrize(
+    'names',
+    [[], ['missing'], ['player_1'], ['player_1', 'player_3', 'player_1', 'missing'], ('player_2',)],
+)
+def test_selected_ratings_match_full_snapshot(
+    names: list[str] | tuple[str, ...],
+    system: RatingSystemName,
+    example_contests: list[Contest],
+    tmp_path: Path,
+) -> None:
+    rater = Rater(system)
+    assert rater.ratings_for(names) == {}
+    rater.extend(example_contests)
+    before = rater.ratings
+    checkpoint = tmp_path / 'before.json'
+    rater.save(checkpoint)
+    expected = {name: before[name] for name in names if name in before}
+
+    assert rater.ratings_for(names) == expected
+    restored = Rater.load(checkpoint)
+    assert restored.ratings_for(names) == expected
+    rater.save(tmp_path / 'after.json')
+    assert (tmp_path / 'after.json').read_bytes() == checkpoint.read_bytes()
+    assert rater.ratings == before
+
+
+@pytest.mark.parametrize('names', ['alice', b'alice', [1], [None], None])
+def test_selected_ratings_reject_invalid_names(names: object) -> None:
+    with pytest.raises(TypeError):
+        Rater().ratings_for(cast(Any, names))
+
+
+def test_selected_snapshot_is_detached_from_later_updates(example_contests: list[Contest]) -> None:
+    rater = Rater()
+    rater.add(example_contests[0])
+    snapshot = rater.ratings_for(['player_1'])
+    rater.add(example_contests[1])
+
+    assert snapshot['player_1'].contests_played == 1
+    assert rater.ratings_for(['player_1'])['player_1'].contests_played == 2
+
+
+def test_selected_snapshot_serializes_with_updates(
+    contest_factory: Callable[[int, int], list[Contest]],
+) -> None:
+    contests = contest_factory(100, 20)
+    rater = Rater('mmr-fast')
+    names = ['player-0000', 'player-0099']
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        update = executor.submit(rater.extend, contests)
+        snapshot = executor.submit(rater.ratings_for, names)
+        update.result(timeout=30)
+        observed = snapshot.result(timeout=30)
+    expected = {name: value for name, value in rater.ratings.items() if name in names}
+    assert observed in ({}, expected)
+
+
+def test_selected_snapshot_rejects_poisoned_rater() -> None:
+    rater = Rater('trueskill', sig_noob=1e308)
+    with pytest.raises(RuntimeError, match='poisoned this Rater'):
+        rater.add(Contest([('alice', 0, 0), ('bob', 1, 1)], time_seconds=1))
+    with pytest.raises(RuntimeError, match='unavailable'):
+        rater.ratings_for(['alice'])

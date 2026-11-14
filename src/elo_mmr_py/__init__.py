@@ -178,6 +178,18 @@ class Rater:
 
         return self._inner.ratings
 
+    def ratings_for(self, names: Sequence[str]) -> dict[str, PlayerRating]:
+        """Snapshot only requested players using ``O(len(names))`` native lookups.
+
+        Unknown names are omitted and duplicate names produce one result. An
+        empty sequence returns an empty dictionary. This does not change state
+        or export unrequested players; use ``ratings`` for a full snapshot.
+        """
+
+        if isinstance(names, (str, bytes)):
+            raise TypeError('names must be a sequence of player names, not str or bytes')
+        return self._inner.ratings_for(names)
+
     def save(self, path: StrPath) -> None:
         """Atomically save the current state as a canonical v2 checkpoint."""
 

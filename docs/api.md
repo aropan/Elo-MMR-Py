@@ -10,9 +10,17 @@ contains `py.typed` plus a stub for the native module.
 ::: elo_mmr_py.Rater
 
 All operations on one `Rater` instance are serialized. In particular,
-`ratings` waits for an in-progress `add()` or `extend()` to finish before it
-builds a consistent snapshot; two simultaneous snapshot reads also run one at
-a time. Separate `Rater` instances can compute in parallel.
+`ratings` and `ratings_for(names)` wait for an in-progress `add()` or `extend()`
+to finish before building a consistent snapshot; two simultaneous snapshot
+reads also run one at a time. Separate `Rater` instances can compute in parallel.
+
+Use `rater.ratings_for(names)` after each contest to retrieve only its participants.
+It performs direct native lookups in `O(len(names))` time and returns the same
+immutable `PlayerRating` values as the corresponding entries in `rater.ratings`,
+without scanning or exporting the full population. Unknown names are omitted,
+duplicates collapse to one result, and an empty sequence returns `{}`. Pass a
+sequence of strings, such as a list or tuple, rather than a single string.
+Reading a snapshot does not update ratings or checkpoint state.
 
 The complete executable example is included from its tested source file:
 

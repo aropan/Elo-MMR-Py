@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `Rater.ratings_for(names)` retrieves selected latest ratings using direct native
+  lookups, without exporting the whole population. Unknown names are omitted;
+  duplicates collapse to one result. Checkpoint format and numerical behavior
+  are unchanged.
+
 ### Changed
 
 - Test ABI3 wheels on CPython 3.11–3.15; move the optional forward-compatibility
